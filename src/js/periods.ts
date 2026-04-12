@@ -43,7 +43,7 @@ export class YearsCache {
 
   static async writeYears(years: number[]): Promise<void> {
     const now = new Date().getTime();
-    const expiry = now + (2 * 24 * 60 * 60 * 1000);  // 48h later.
+    const expiry = now + (90 * 24 * 60 * 60 * 1000);  // ~3 months later.
 
     const cacheValue: YearsCacheValue = {
       expiryTimestampMillis: expiry,
@@ -57,9 +57,19 @@ export class YearsCache {
   }
 }
 
+function getCurrentYear(): number {
+  return new Date().getUTCFullYear()
+}
+
 export async function getPeriods(fromCacheOnly: boolean = false): Promise<number[]> {
   const years = await getYears(fromCacheOnly);
-  const periods = years.length == 0 ? [] : [1, 2, 3].concat(years);
+
+  // Make sure we have the current year, even if we've not been told about it
+  // by Amazon, so that in January users can see their new stuff before the
+  // (sometimes slow) available years discovery process has completed.
+  const yearsWithThisYear = [...new Set([...years, getCurrentYear()])].sort();
+
+  const periods = yearsWithThisYear.length == 0 ? [] : [1, 2, 3].concat(years);
   return periods;
 }
 
